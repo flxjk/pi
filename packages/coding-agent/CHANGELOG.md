@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Removed install reporting to pi.dev and the `enableInstallTelemetry`, `enableAnalytics`, and `trackingId` settings, along with the `PI_TELEMETRY` environment variable, the first-run analytics opt-in, and provider attribution headers
+
 ### Breaking Changes
 
 - Extension components: `render()` now returns `readonly string[]`, and `Container` returns the same cached array while its children are unchanged. Extensions that modify render output in place, including `super.render()` in a `Container` subclass or an embedded component's output, must copy it first ([#9549](https://github.com/earendil-works/pi/issues/9549))
