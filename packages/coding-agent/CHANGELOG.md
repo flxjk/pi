@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Removed install reporting to pi.dev and the `enableInstallTelemetry`, `enableAnalytics`, and `trackingId` settings, along with the `PI_TELEMETRY` environment variable, the first-run analytics opt-in, and provider attribution headers
+
 ### Added
 
 - Added `compat.supportsStrictMode` for `google-generative-ai` and `google-vertex` models in `models.json`, so Gemini 3+ models served under IDs without the version can use strict tools ([#12321](https://github.com/earendil-works/pi/issues/12321))
@@ -14,10 +18,6 @@
 - Fixed `/tree` navigation adding the branch's prompts to Up-arrow history again on every navigation; prompts already in history now move to the most recent position instead of repeating ([#12279](https://github.com/earendil-works/pi/issues/12279))
 - Fixed closing the console window or terminal tab on Windows skipping `session_shutdown` and leaving commands started by the bash tool running, for example `sleep 300` from `bash -c "sleep 300"`. pi now handles SIGHUP on Windows like on POSIX and waits for `taskkill` to finish before it exits. Quitting with Ctrl+D or `/quit` while a `!` command runs, or ending RPC mode while a `bash` command runs, no longer leaves that command running on Windows either
 - Fixed the `AuthStorage` coalesced-reload test failing intermittently on systems with coarse file timestamps ([#12190](https://github.com/earendil-works/pi/issues/12190))
-
-### Removed
-
-- Removed install reporting to pi.dev and the `enableInstallTelemetry`, `enableAnalytics`, and `trackingId` settings, along with the `PI_TELEMETRY` environment variable, the first-run analytics opt-in, and provider attribution headers
 
 ## [1.6.0] - 2026-11-20
 

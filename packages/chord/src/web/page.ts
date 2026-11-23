@@ -19,7 +19,7 @@ import {
 	translationsFacet,
 	WebScripts,
 } from "../surfaces/index.ts";
-import { sendPageTelemetry, TelemetryRecorder, type TelemetrySender } from "../telemetry-ingest/index.ts";
+import { TelemetryRecorder } from "../telemetry-ingest/index.ts";
 import { pageEnvironment } from "./environment.ts";
 import { followLanguage } from "./language.ts";
 import { type PageBootstrap, PageScripts } from "./scripts.ts";
@@ -113,26 +113,14 @@ export async function startPage<P extends Principal>(options: PageOptions<P>): P
 		...(options.follow === false ? { follow: false } : {}),
 		onError,
 	});
-	if (recorder !== undefined) sendEvery(sendPageTelemetry(client.host, recorder, BACKGROUND_CONTEXT));
 	if (themes) await followThemes(client.host, BACKGROUND_CONTEXT);
 	await followLanguage(client.host, (report) => onError({ kind: "messages", report }), BACKGROUND_CONTEXT);
 	options.render(client.host);
 	return client;
 }
 
-/** How many finished spans a page keeps while it cannot send (past it new ones are dropped). */
+/** How many finished spans a page keeps on the device. */
 const PAGE_QUEUE = 1000;
-
-/** How often a page sends its finished spans. */
-const PAGE_SEND_MS = 3000;
-
-/** Sends with `sender` every `PAGE_SEND_MS` and at once when the page is hidden (it may not come back). */
-function sendEvery(sender: TelemetrySender): void {
-	setInterval(() => void sender.send(false), PAGE_SEND_MS);
-	document.addEventListener("visibilitychange", () => {
-		if (document.visibilityState === "hidden") void sender.send(true);
-	});
-}
 
 /** The server's current base bundle hash (`undefined` when it cannot be asked: offline, restarting). */
 async function serverBase(): Promise<string | undefined> {

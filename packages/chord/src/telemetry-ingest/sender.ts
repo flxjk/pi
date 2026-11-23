@@ -1,12 +1,12 @@
-// How a page and a worker send what their recorder kept (decisions "Telemetry from browser pages", "The server is the
-// one place telemetry is stored"): their host holds the server's telemetry object over the link it has, and each send
+// How a local worker sends what its recorder kept (decision "The server is the
+// one place telemetry is stored"): its host holds the server's telemetry object over the process IPC link, and each send
 // takes one batch from the recorder and calls `ingest` with it; a batch that cannot be sent (no link, a refusal) is
 // given up, best effort. One send at a time; nothing is sent while the object is not bound.
 
 import { BACKGROUND_CONTEXT, type Context } from "../context/index.ts";
 import type { Principal } from "../data/index.ts";
 import type { Host } from "../host/index.ts";
-import { PAGE_BATCH_SPANS, PageTelemetry, WORKER_BATCH_ROWS, WorkerTelemetry } from "./batch.ts";
+import { WORKER_BATCH_ROWS, WorkerTelemetry } from "./batch.ts";
 import type { TelemetryBatch, TelemetryRecorder } from "./recorder.ts";
 
 /** A running sender: `send` sends one batch now (with `partial`, the metric intervals not over too), `stop` stops. */
@@ -15,25 +15,19 @@ export type TelemetrySender = {
 	stop(): void;
 };
 
-/** Sends a page's spans (never its metrics) to the server's `PageTelemetry`, at most `PAGE_BATCH_SPANS` a batch. */
+/**
+ * Keep the page sender API for callers. A browser's server can be on another
+ * machine, so the fork keeps the page recorder on the device.
+ */
 export function sendPageTelemetry<P extends Principal>(
-	host: Host<P>,
-	recorder: TelemetryRecorder,
-	context: Context,
+	_host: Host<P>,
+	_recorder: TelemetryRecorder,
+	_context: Context,
 ): TelemetrySender {
-	const held = host.hold(PageTelemetry, {}, context);
-	// Spans only: its metrics are taken with them and dropped.
-	const waiting = (_partial: boolean) => recorder.queuedSpans > 0;
-	return sender(
-		recorder,
-		PAGE_BATCH_SPANS,
-		waiting,
-		() => held.release(),
-		(batch) => {
-			if (held.state.value.kind !== "live") return undefined;
-			return held.ingest({ spans: batch.spans }, BACKGROUND_CONTEXT);
-		},
-	);
+	return {
+		send: () => Promise.resolve(),
+		stop: () => {},
+	};
 }
 
 /** Sends a worker's spans and metrics to the server's `WorkerTelemetry`, at most `WORKER_BATCH_ROWS` spans a batch. */
