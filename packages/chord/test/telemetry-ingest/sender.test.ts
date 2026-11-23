@@ -1,7 +1,3 @@
-// Tests of the senders: a page's sends its spans (never its metrics) to the server's `PageTelemetry`, a worker's its
-// spans and metrics to `WorkerTelemetry`; nothing is sent (or lost) while the object is not bound, a refused batch is
-// given up.
-
 import { describe, expect, it } from "vitest";
 import { BACKGROUND_CONTEXT as context } from "../../src/context/index.ts";
 import { hostKind } from "../../src/contracts/index.ts";
@@ -50,37 +46,17 @@ async function sending(principal: Principal, scope: (incarnation: string) => str
 }
 
 describe("a page's sender", () => {
-	it("sends its spans without metrics once bound; until then they wait in the recorder", async () => {
+	it("keeps recorded spans on the device even while a server is connected", async () => {
 		const { batches, recorder, client, connect } = await sending({ kind: "owner" }, (inc) => `browser:${inc}`);
-		const sender = sendPageTelemetry(client, recorder, context);
-		await recorder.startSpan({ name: "page.click" }, () => {});
-		recorder.metrics.counter("clicks").add(1);
-		await sender.send(true);
-		expect(batches).toEqual([]);
 		connect();
 		await transported();
-		await sender.send(true);
-		// The sender's own hold is shared work: a `chord.hold` root on the page's adapter, sent with the rest.
-		expect(batches.map(({ spans, metrics }) => [spans.map(({ name }) => name), metrics])).toEqual([
-			[["page.click", "chord.hold"], []],
-		]);
-		expect(recorder.queuedSpans).toBe(0);
-		// Nothing waits: no call.
-		await sender.send(true);
-		expect(batches).toHaveLength(1);
-		sender.stop();
-	});
-
-	it("gives a refused batch up", async () => {
-		// Ids the server refuses: not under the page's prefix.
-		const { batches, recorder, client, connect } = await sending({ kind: "owner" }, () => "elsewhere");
-		connect();
 		const sender = sendPageTelemetry(client, recorder, context);
-		await transported();
 		await recorder.startSpan({ name: "page.click" }, () => {});
 		await sender.send(false);
-		expect(batches.map(({ spans }) => spans)).toEqual([[]]);
-		expect(recorder.queuedSpans).toBe(0);
+		await sender.send(true);
+		sender.stop();
+		expect(batches).toEqual([]);
+		expect(recorder.queuedSpans).toBeGreaterThan(0);
 	});
 });
 
